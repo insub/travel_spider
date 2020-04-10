@@ -64,9 +64,11 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'travel_spider.pipelines.TravelSpiderPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   # 'travel_spider.pipelines.TravelSpiderPipeline': 300,
+   'travel_spider.pipelines.MongoPipline': 300,
+   'travel_spider.pipelines.MySQLPipeline': 301,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -88,3 +90,54 @@ ROBOTSTXT_OBEY = True
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+
+
+'''解决redis 中request 跑完，爬虫仍然空跑的情况'''
+MYEXT_ENABLED = True      # 开启扩展
+IDLE_NUMBER = 60  # 配置允许的空闲时长，每5秒会增加一次IDLE_NUMBER，直到增加到12，程序才会close
+
+# 在 EXTENSIONS 配置，激活扩展
+EXTENSIONS = {
+            'travel_spider.extensions.RedisSpiderSmartIdleClosedExensions': 500,
+        }
+
+'''log error request '''
+FAIL_REQUEST_URLS_DIR = './'
+ERROR_STATUS_CODE = 999
+HTTPERROR_ALLOWED_CODES = [ERROR_STATUS_CODE]
+
+
+# --------redis 配置信息----
+''''测试环境'''''
+# REDIS_HOST = '192.168.25.65'
+
+''''生成环境'''''
+REDIS_HOST = '192.168.25.58'
+REDIS_POST = 6379
+REDIS_PARAMS = {
+    'password': 'test,123456!'
+}
+
+# --------mysql 配置信息-----------
+
+''''测试环境'''''
+# mysql_url = 'localhost'
+''''生成环境'''''
+MYSQL_URL = '192.168.25.100'
+#
+MYSQL_PORT = 3306
+MYSQL_USER = 'root'
+MYSQL_PASSWORD = 'champion'
+MYSQL_DATABASE = 'travel_spider'
+
+PROXY_URL = 'http://192.168.124.22:5555/random'
+
+
+# --------mongodb 配置信息----
+# 用来存放raw data
+MONGO_URI = '192.168.25.100'
+MONGO_DB = 'travel_spider'
+MONGO_USER = 'travel_spider'
+MONGO_PASSWORD = 'root'
+
