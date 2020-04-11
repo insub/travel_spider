@@ -93,6 +93,30 @@ ITEM_PIPELINES = {
 
 
 
+""" scrapy-redis配置 """
+# Enables scheduling storing requests queue in redis.
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+# Ensure all spiders share same duplicates filter through redis.
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+
+SCHEDULER_QUEUE_CLASS = 'scrapy_redis.queue.PriorityQueue'
+
+#
+# SCHEDULER = 'scrapy_redis_bloomfilter.scheduler.Scheduler'
+# DUPEFILTER_CLASS="scrapy_redis_bloomfilter.dupefilter.RFPDupeFilter"
+# SCHEDULER_QUEUE_CLASS = 'scrapy_redis_bloomfilter.queue.PriorityQueue'
+
+
+SCHEDULER_PERSIST = True
+BLOOMFILTER_HASH_NUMBER = 6
+BLOOMFILTER_BIT = 30
+
+
+SCHEDULER_FLUSH_ON_START = False
+REDIS_START_URLS_AS_SET = False
+REDIS_START_URLS_KEY = '%(name)s:start_urls'
+# LOG_LEVEL = 'INFO'
+
 '''解决redis 中request 跑完，爬虫仍然空跑的情况'''
 MYEXT_ENABLED = True      # 开启扩展
 IDLE_NUMBER = 60  # 配置允许的空闲时长，每5秒会增加一次IDLE_NUMBER，直到增加到12，程序才会close
@@ -115,9 +139,9 @@ HTTPERROR_ALLOWED_CODES = [ERROR_STATUS_CODE]
 ''''生成环境'''''
 REDIS_HOST = '192.168.25.58'
 REDIS_POST = 6379
-REDIS_PARAMS = {
-    'password': 'test,123456!'
-}
+# REDIS_PARAMS = {
+#     'password': 'test,123456!'
+# }
 
 # --------mysql 配置信息-----------
 
