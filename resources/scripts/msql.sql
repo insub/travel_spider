@@ -13,5 +13,6 @@ open_time  varchar(1000) COMMENT '开放时间',
 ticket  varchar(1000) COMMENT '门票',
 phone  varchar(1000) COMMENT '电话',
 website  varchar(1000) COMMENT '网址',
-poi_tip_content  varchar(1000) COMMENT '小提示'
+poi_tip_content  varchar(1000) COMMENT '小提示',
+url varchar(300) comment '网址'
 ) comment = 'poi详情';

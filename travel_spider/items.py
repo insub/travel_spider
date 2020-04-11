@@ -55,6 +55,7 @@ class PoiDetailItem(MongoDBItem, MysqlItem):
     phone = scrapy.Field()
     website = scrapy.Field()
     poi_tip_content = scrapy.Field()
+    url = scrapy.Field()
 
 
 class PhotoItem(scrapy.Item):

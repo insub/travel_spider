@@ -100,6 +100,7 @@ class QyerSpider(RedisSpider):
         item = items.PoiDetailItem()
         item['raw'] = {'html': str(lzma.compress(response.body))}
 
+        item['url'] = response.request.url
         item['id'] = response.request.meta.get('id')
         item['head'] = utils.get_text_by_xpath(html, './/div[@class="qyer_head_crumb"]/span//text()')
         item['title'] = utils.get_text_by_xpath(html, './/div[@class="poi-largeTit"]/h1[@class="cn"]//text()')
