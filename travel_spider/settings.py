@@ -65,9 +65,9 @@ ROBOTSTXT_OBEY = False
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'travel_spider.pipelines.TravelSpiderPipeline': 300,
-   # 'travel_spider.pipelines.MongoPipline': 300,
-   # 'travel_spider.pipelines.MySQLPipeline': 301,
+   # 'travel_spider.pipelines.TravelSpiderPipeline': 300,
+   'travel_spider.pipelines.MongoPipline': 300,
+   'travel_spider.pipelines.MySQLPipeline': 301,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
