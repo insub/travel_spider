@@ -1,6 +1,7 @@
 CREATE DATABASE travel_spider DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 create  table poi_detail(
-id  varchar(1000) COMMENT 'id',
+id  varchar(100) COMMENT 'id',
+catename  varchar(100) COMMENT '活动类型',
 head  varchar(1000) COMMENT '层级信息',
 title  varchar(1000) COMMENT '中文名称',
 title_en  varchar(1000) COMMENT '英文名称',

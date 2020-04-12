@@ -10,6 +10,7 @@
 """
 
 import re
+from urllib.parse import urlencode
 
 import execjs
 from lxml.etree import HTML
@@ -36,12 +37,14 @@ class QyerSpider(RedisSpider):
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
     }
 
+
     def start_requests(self):
         """
         传入地点的url
         eg:https://place.qyer.com/dubai/sight/
         """
-        yield Request(url='https://place.qyer.com/dubai/activity/', dont_filter=False)
+
+        yield Request(url='https://place.qyer.com/dubai/activity/',dont_filter=False)
 
     def parse(self, response):
         """:param
@@ -62,18 +65,19 @@ class QyerSpider(RedisSpider):
         page_nums = html.xpath('.//div[@class="ui_page"]/a/@data-page')
         page_nums = [int(i) for i in page_nums if i.isdigit()]
         page_num = max(page_nums)
-        from urllib.parse import urlencode
-        urlencode(place)
+        poi_sort = utils.get_text_by_xpath(html, './/p[@id="poiSort"]/a[@class="current"]/@data-id')
+
         for i in range(1, page_num+1):
             param = {'action': 'list_json',
                      'haslastm': 'false',
                      'isnominate': '-1',
-                     'page': i ,
+                     'page': i,
                      'pid': place['PID'],
                      'rank': '6',
-                     'sort': '32',
+                     'sort': poi_sort,
                      'subsort': 'all',
                      'type': place['TYPE']}
+            print('爬取第{} 页'.format(i))
             yield Request(url=url+urlencode(param), callback=self.parse_poi_list)
 
     def parse_poi_list(self, response):
@@ -89,7 +93,7 @@ class QyerSpider(RedisSpider):
             item = items.PoiItem()
             item['raw'] = content
             yield item
-            yield Request('http:' + content.get('url'), meta={'id': content.get('id')}, callback=self.parse_poi_detail)
+            yield Request('http:' + content.get('url'), meta={'id': content.get('id'), 'catename':content.get('catename')}, callback=self.parse_poi_detail)
 
     def parse_poi_detail(self, response):
         """
@@ -102,6 +106,7 @@ class QyerSpider(RedisSpider):
 
         item['url'] = response.request.url
         item['id'] = response.request.meta.get('id')
+        item['catename'] = response.request.meta.get('catename')
         item['head'] = utils.get_text_by_xpath(html, './/div[@class="qyer_head_crumb"]/span//text()')
         item['title'] = utils.get_text_by_xpath(html, './/div[@class="poi-largeTit"]/h1[@class="cn"]//text()')
         item['title_en'] = utils.get_text_by_xpath(html, './/div[@class="poi-largeTit"]/h1[@class="en"]//text()')

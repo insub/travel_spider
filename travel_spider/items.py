@@ -42,6 +42,7 @@ class PoiDetailItem(MongoDBItem, MysqlItem):
     raw = scrapy.Field()
 
     id = scrapy.Field()
+    catename = scrapy.Field()
     head = scrapy.Field()
     title = scrapy.Field()
     title_en = scrapy.Field()
