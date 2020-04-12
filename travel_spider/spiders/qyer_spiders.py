@@ -41,7 +41,7 @@ class QyerSpider(RedisSpider):
         传入地点的url
         eg:https://place.qyer.com/dubai/sight/
         """
-        yield Request(url='https://place.qyer.com/dubai/sight/', dont_filter=False)
+        yield Request(url='https://place.qyer.com/dubai/activity/', dont_filter=False)
 
     def parse(self, response):
         """:param

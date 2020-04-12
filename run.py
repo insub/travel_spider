@@ -14,7 +14,7 @@ from travel_spider.spiders.qyer_spiders import QyerSpider
 
 
 def main():
-    process = CrawlerProcess()
+    process = CrawlerProcess()  
     process.crawl(QyerSpider)
     process.start()
 

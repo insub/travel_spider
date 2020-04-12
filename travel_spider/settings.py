@@ -19,7 +19,7 @@ NEWSPIDER_MODULE = 'travel_spider.spiders'
 #USER_AGENT = 'travel_spider (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
@@ -65,9 +65,9 @@ ROBOTSTXT_OBEY = True
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   # 'travel_spider.pipelines.TravelSpiderPipeline': 300,
-   'travel_spider.pipelines.MongoPipline': 300,
-   'travel_spider.pipelines.MySQLPipeline': 301,
+   'travel_spider.pipelines.TravelSpiderPipeline': 300,
+   # 'travel_spider.pipelines.MongoPipline': 300,
+   # 'travel_spider.pipelines.MySQLPipeline': 301,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
