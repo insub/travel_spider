@@ -55,7 +55,6 @@ class MongoPipline(object):
         self.client = pymongo.MongoClient(uri)
         self.db = self.client[self.mongo_db]
 
-
     def process_item(self, item, spider):
         if isinstance(item, MongoDBItem):
             name = item.collection

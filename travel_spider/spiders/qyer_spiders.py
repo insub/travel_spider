@@ -21,7 +21,7 @@ from scrapy.http import Request
 
 from travel_spider import utils
 from travel_spider import items
-
+from travel_spider.country import  countries
 
 class QyerSpider(RedisSpider):
     '''
@@ -37,14 +37,27 @@ class QyerSpider(RedisSpider):
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
     }
 
-
     def start_requests(self):
         """
         传入地点的url
-        eg:https://place.qyer.com/dubai/sight/
+        eg:https://place.qyer.com/hong-kong/sight/
         """
+        url = "https://place.qyer.com/{country}/citylist-0-0-1/"
+        for country in countries:
+            yield Request(url=url.format(country=country), dont_filter=False, callback=self.parse_city)
+            # yield Request(url='https://place.qyer.com/hong-kong/sight/', dont_filter=False)
 
-        yield Request(url='https://place.qyer.com/dubai/activity/',dont_filter=False)
+    def parse_city(self, response):
+        html = HTML(response.text)
+        urls = html.xpath('.//ul[@class="plcCitylist"]/li/h3/a/@href')
+        for url, suffix in zip(urls, ['sight/', 'activity/']):
+            yield Request(url='http:'+url+suffix, callback=self.parse)
+
+    def get_page_num(self, html):
+        page_nums = html.xpath('.//div[@class="ui_page"]/a/@data-page')
+        page_nums = [int(i) for i in page_nums if i.isdigit()]
+        page_num = max(page_nums)
+        return page_num
 
     def parse(self, response):
         """:param
@@ -62,23 +75,60 @@ class QyerSpider(RedisSpider):
         place = execjs.eval(place)
         # 获取页码
         html = HTML(response.text)
-        page_nums = html.xpath('.//div[@class="ui_page"]/a/@data-page')
-        page_nums = [int(i) for i in page_nums if i.isdigit()]
-        page_num = max(page_nums)
-        poi_sort = utils.get_text_by_xpath(html, './/p[@id="poiSort"]/a[@class="current"]/@data-id')
 
-        for i in range(1, page_num+1):
+        page_num = self.get_page_num(html)
+
+        poi_sort = utils.get_text_by_xpath(html, './/p[@id="poiSort"]/a[@class="current"]/@data-id')
+        # TODO
+        if page_num < 100:
+            for i in range(1, page_num+1):
+                param = {'action': 'list_json',
+                         'haslastm': 'false',
+                         'isnominate': '-1',
+                         'page': i,
+                         'pid': place['PID'],
+                         'rank': '6',
+                         'sort': poi_sort,
+                         'subsort': 'all',
+                         'type': place['TYPE']}
+                print('爬取第{} 页'.format(i))
+                yield Request(url=url+urlencode(param), callback=self.parse_poi_list)
+        else:
+            subsorts = html.xpath('.//li[@id="poiSubsort"]/p[@id="poiSortLabels"]/a/@data-id')
+            for subsort in subsorts:
+                if subsort == '0':
+                    continue
+                param = {'action': 'list_json',
+                         'haslastm': 'false',
+                         'isnominate': '-1',
+                         'page': 1,
+                         'pid': place['PID'],
+                         'rank': '6',
+                         'sort': poi_sort,
+                         'subsort': subsort,
+                         'type': place['TYPE']}
+                # print('爬取第{} 页'.format(1))
+                yield Request(url=url + urlencode(param), meta={'param': param}, callback=self.pares_poi_subpage)
+
+    def pares_poi_subpage(self, response):
+        url = 'https://place.qyer.com/poi.php?'
+        text = response.body.decode('unicode-escape').replace('\n', '').replace('\r', '')
+        pattern = re.compile('"pagehtml":(.*)}}')
+        html = HTML(pattern.findall(text)[0])
+        page_num = self.get_page_num(html)
+        param = response.request.meta.get('param')
+        for i in range(1, page_num + 1):
             param = {'action': 'list_json',
                      'haslastm': 'false',
                      'isnominate': '-1',
                      'page': i,
-                     'pid': place['PID'],
+                     'pid': param.get('pid'),
                      'rank': '6',
-                     'sort': poi_sort,
-                     'subsort': 'all',
-                     'type': place['TYPE']}
+                     'sort': param.get('sort'),
+                     'subsort': param.get('subsort'),
+                     'type': param.get('type')}
             print('爬取第{} 页'.format(i))
-            yield Request(url=url+urlencode(param), callback=self.parse_poi_list)
+            yield Request(url=url + urlencode(param), meta={'param': param}, callback=self.parse_poi_list)
 
     def parse_poi_list(self, response):
         """

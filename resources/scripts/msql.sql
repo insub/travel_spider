@@ -17,3 +17,26 @@ website  varchar(1000) COMMENT '网址',
 poi_tip_content  varchar(1000) COMMENT '小提示',
 url varchar(300) comment '网址'
 ) comment = 'poi详情';
+
+
+create table lvmamam_poi_detail(
+country  varchar(1000)  comment '',
+head  varchar(1000)  comment ' 头',
+title  varchar(1000)  comment ' 中文标题',
+title_en  varchar(1000)  comment ' 英文标题',
+vcomon  varchar(1000)  comment ' 景点类型',
+active  varchar(1000)  comment ' 活动内容',
+poi_detail  text  comment ' 景点导览',
+poi_brief  text  comment ' 景点介绍',
+address  varchar(1000)  comment ' 地　　址',
+arrive_method  varchar(1000)  comment '',
+open_time  varchar(1000)  comment ' 开放时间',
+playtime  varchar(1000)  comment ' 游玩时间',
+website  varchar(1000)  comment '官方网址',
+traffic  varchar(1000)  comment ' 交通',
+ticket  varchar(1000)  comment ' 门票说明',
+phone  varchar(1000)  comment ' 联系电话：',
+poi_tip_content  varchar(4000)  comment ' 小贴士',
+url  varchar(1000)  comment ''
+) comment 'lvmama poi详情';
+

@@ -59,6 +59,43 @@ class PoiDetailItem(MongoDBItem, MysqlItem):
     url = scrapy.Field()
 
 
+class LvmamaPoiItem(MongoDBItem):
+    collection = 'lvmamam_poi'
+
+    raw = scrapy.Field()
+
+class LvmamaPoiDetailItem(MongoDBItem, MysqlItem):
+    '''
+    lvmama poi 详情
+    '''
+    collection = 'lvmamam_poi_detail'
+    table = 'lvmamam_poi_detail'
+
+    # raw 字段存入mongodb
+    raw = scrapy.Field()
+
+    country = scrapy.Field()
+    head = scrapy.Field()  # 头
+    title = scrapy.Field()  # 中文标题
+    title_en = scrapy.Field()  # 英文标题
+    vcomon = scrapy.Field()  # 景点类型
+
+    active = scrapy.Field()  # 活动内容
+    poi_detail = scrapy.Field()  # 景点导览
+    poi_brief = scrapy.Field()  # 景点介绍
+    address = scrapy.Field()  # 地　　址
+    arrive_method = scrapy.Field()
+    open_time = scrapy.Field()  # 开放时间
+    playtime = scrapy.Field()  # 游玩时间
+    website = scrapy.Field()  #官方网址
+    traffic = scrapy.Field()  # 交通
+    ticket = scrapy.Field()  # 门票说明
+    phone = scrapy.Field()  # 联系电话：
+    poi_tip_content = scrapy.Field()  # 小贴士
+    url = scrapy.Field()
+    website = scrapy.Field()  # 官方网址
+
+
 class PhotoItem(scrapy.Item):
     """
     图片item

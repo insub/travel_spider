@@ -66,4 +66,7 @@ def get_date(days = 0, strpt="%Y-%m-%d"):
 
 
 def get_text_by_xpath(ele, xpath, join_str=""):
-    return join_str.join([i.replace(r'\n', '').strip() for i in ele.xpath(xpath) if i != ""])
+    try:
+        return join_str.join([i.replace('\n', '').replace(' ', '').strip() for i in ele.xpath(xpath) if i != ""])
+    except Exception as e:
+        return ''

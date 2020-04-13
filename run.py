@@ -21,4 +21,4 @@ def main():
 
 if __name__ == '__main__':
     # cmdline.execute('scrapy crawl stock_sina_trade_detail_per_day'.split())
-    cmdline.execute('scrapy crawl qyer_spider'.split())
+    cmdline.execute('scrapy crawl lvmama_spider'.split())
