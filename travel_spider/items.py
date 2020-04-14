@@ -61,8 +61,11 @@ class PoiDetailItem(MongoDBItem, MysqlItem):
 
 class LvmamaPoiItem(MongoDBItem):
     collection = 'lvmamam_poi'
-
     raw = scrapy.Field()
+
+# class LvmamaPoiItem(MongoDBItem):
+#     collection = 'lvmamam_poi'
+#     raw = scrapy.Field()
 
 class LvmamaPoiDetailItem(MongoDBItem, MysqlItem):
     '''

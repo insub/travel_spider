@@ -21,7 +21,7 @@ from scrapy.http import Request
 
 from travel_spider import utils
 from travel_spider import items
-from travel_spider.country import  countries
+from travel_spider.country import  qyer_countries
 
 class QyerSpider(RedisSpider):
     '''
@@ -43,7 +43,7 @@ class QyerSpider(RedisSpider):
         eg:https://place.qyer.com/hong-kong/sight/
         """
         url = "https://place.qyer.com/{country}/citylist-0-0-1/"
-        for country in countries:
+        for country in qyer_countries:
             yield Request(url=url.format(country=country), dont_filter=False, callback=self.parse_city)
             # yield Request(url='https://place.qyer.com/hong-kong/sight/', dont_filter=False)
 

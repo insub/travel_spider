@@ -8,10 +8,17 @@
 @time: 2020/4/13 13:22
 @desc:
 '''
+import copy
+from itertools import product
+import math
+import re
+
+import json
 from lxml.etree import HTML
 import lzma
 from scrapy_redis.spiders import RedisSpider
 from scrapy.http import Request
+from urllib.parse import urlencode
 
 from travel_spider.country import lvmanma_countries
 from travel_spider.utils import get_text_by_xpath
@@ -28,48 +35,156 @@ class LvmamaSpider(RedisSpider):
     }
 
     content = {
-        'play': '娱乐',
-        'scenery': '景点'
+        'play': {'url': 'http://www.lvmama.com/lvyou/dest_content/AjaxGetPlayList?',
+                 'data': {'page': 1,
+                    'dest_id': ''
+                },'page_per_count': 20},
+
+        'scenery': {'url': 'http://www.lvmama.com/lvyou/ajax/getNewViewList?',
+                 'data':{'page_num': 1,
+                        'dest_id': "",
+                        'base_id': 1,
+                        'request_uri': '/lvyou/scenery/'
+                },
+                    'page_per_count': 10},
     }
 
     def start_requests(self):
         url = 'http://www.lvmama.com/lvyou/{type}/{country}'
-        for country, type in zip(lvmanma_countries, self.content.keys()):
-            yield Request(url=url.format(type=type, country=country), dont_filter=True, meta={'country': country, 'type': type}, callback=self.parse_poi_list)
+        for country, (type, value) in product(lvmanma_countries, self.content.items()):
+            dest_id_pattern = re.compile('(\d+)')
+            dest_id = dest_id_pattern.findall(country)[-1]
+            data = copy.deepcopy(value.get('data'))
+            data['dest_id'] = dest_id
+            page_per_count = value.get('page_per_count')
+            if 'request_uri' in data:
+                data['request_uri'] = data['request_uri'] + country
+            # url = value.get('url') + urlencode(data)
 
-    def parse_poi_list(self, response):
+            yield Request(url=url.format(type=type, country=country), dont_filter=True,
+                          meta={'country': country, 'request_uri': country,
+                                'dest_id': dest_id,  'type': type, 'level': 'country', 'page_per_count': page_per_count},
+                          callback=self.parse)
+
+    def parse(self, response):
+        # 获取 dest_id, base_id
+        # 获取页码数
+
         html = HTML(response.text)
-        a_list = html.xpath('.//div[@id="viewspot_list"]/dl/dd/div[@class="title"]/a')
+        meta = response.request.meta
+        num_pattern = re.compile('(\d+)')
+        count_info = get_text_by_xpath(html, './/div[@class="wy_state_page"]/p//text()')
+        total_count = num_pattern.findall(count_info)[-1]
+        page_num = 1
+        if total_count.isdigit():
+            page_per_count = meta.get('page_per_count')
+            page_num = math.ceil(int(total_count)/page_per_count)
+        # page_num = max([int(i) for i in page_nums if i.isdigit()])
+        view_list = html.xpath('.//div[@id="view_list"]')
+        if view_list:
+            for request in self.parse_play_detail(html, meta):
+                yield request
+            return
 
-        if not a_list:
-            a_list = html.xpath('.//div[@id="play_list"]//dl//div[@class="item-info"]//strong/a')
-        if not a_list:
-            a_list = html.xpath('.//div[@id="view_list"]//dl/dd//a')
+        type = meta.get('type')
+        dest_id = meta.get('dest_id')
+        for i in range(1, page_num + 1):
+            if type == 'play' and meta.get('level') == 'country':
+                data = {
+                    'page': i,
+                    'dest_id': dest_id
+                }
+                yield Request(url="http://www.lvmama.com/lvyou/dest_content/AjaxGetPlayList?"+urlencode(data), meta=meta, callback=self.parse_play_list)
+
+            elif type == 'play' and meta.get('level') != 'country':
+                data = {'page': i,
+                        'dest_id': dest_id,
+                        'search_key': '',
+                        'request_uri': '/lvyou/play/' + meta.get('request_uri'),
+                        'type': type}
+                yield Request(url="http://www.lvmama.com/lvyou/dest_content/AjaxGetViewSpotList?" + urlencode(data), meta=meta, callback=self.parse_play_list2)
+
+            elif type == 'scenery':
+                base_id_pattern = re.compile('base_id  :"(\d+)",')
+                base_id = base_id_pattern.findall(response.text)[-1]
+                data = {'page_num': i,
+                        'dest_id': dest_id,
+                        'base_id': base_id,
+                        'request_uri': '/lvyou/scenery/' + meta.get('request_uri')
+                }
+                yield Request(url='http://www.lvmama.com/lvyou/ajax/getNewViewList?'+urlencode(data), meta=meta, callback=self.parse_view_list)
+
+    def parse_view_list(self, response):
+        # 景点列表解析
+
+        jsn = json.loads(response.text)
+        meta = response.request.meta
+        item = LvmamaPoiItem()
+        item['raw'] = {'meta': meta, 'content': jsn}
+        yield item
+
+        meta['level'] = 'poi'
+        html = HTML(jsn.get('data'))
+        a_list = html.xpath('.//dl/dd/div[@class="title"]/a')
         for a in a_list:
             url = get_text_by_xpath(a, '@href')
-            title = get_text_by_xpath(a, 'text()')
-            if not url.startswith('http://www.lvmama.com') or url.endswith('#dianping'):
-                continue
-            item = LvmamaPoiItem()
-            item['raw'] = {'title': title, 'url': url}
-            yield item
+            if url.startswith('http://www.lvmama.com/lvyou/poi') and not url.endswith('#dianping'):
+                url = get_text_by_xpath(a, '@href')
+                yield Request(url=url, meta=meta, callback=self.parse_poi)
 
-            if url.startswith('http://www.lvmama.com/lvyou/poi'):
-                yield Request(url=url, meta=response.request.meta, callback=self.parse_poi)
-            else:
-                # 'http://www.lvmama.com/lvyou/d-lasiweijiasi3719.html'
-                lase_index = len(url) - url[::-1].index('/')
-                for type in self.content.keys():
-                    yield Request(url=url[:lase_index - 1] + '/' + type + url[lase_index - 1:],  meta={'country': response.request.meta.get('country'), 'type': type}, callback=self.parse_poi_list)
+    def parse_play_list(self, response):
+        # country 层面的playlist
+        jsn = json.loads(response.text)
+        item = LvmamaPoiItem()
+        meta = response.request.meta
+        item['raw'] = {'meta': meta, 'content': jsn}
+        yield item
+
+        meta['level'] = 'city'
+        html = HTML(jsn.get('data').get('html'))
+        a_list = html.xpath('.//dl//div[@class="item-info"]//strong/a')
+        for a in a_list:
+            url = get_text_by_xpath(a, '@href')
+            if url.startswith('http://www.lvmama.com/lvyou') and not url.endswith('#dianping'):
+                url = get_text_by_xpath(a, '@href')
+                meta['request_uri'] = url.replace("http://www.lvmama.com/lvyou/", '')
+                yield Request(url=url, meta=meta, callback=self.parse)
+
+    def parse_play_list2(self, response):
+        ## city 层面的playlist
+        jsn = json.loads(response.text)
+        item = LvmamaPoiItem()
+        meta = response.request.meta
+        item['raw'] = {'meta': meta, 'content': jsn}
+        yield item
+
+        meta['level'] = 'poi'
+        html = HTML(jsn.get('data').get('html'))
+        for request in self.parse_play_detail(html, meta):
+            yield request
+        # a_list = html.xpath('.//dl/dt/a')
+        # for a in a_list:
+        #     url = get_text_by_xpath(a, '@href')
+        #     meta['request_uri'] = url.replace("http://www.lvmama.com/lvyou/poi/", '')
+        #     yield Request(url=url, meta=meta, callback=self.parse_poi)
+
+    def parse_play_detail(self, html, meta):
+        a_list = html.xpath('.//dl/dt/a')
+        result = []
+        for a in a_list:
+            url = get_text_by_xpath(a, '@href')
+            meta['request_uri'] = url.replace("http://www.lvmama.com/lvyou/poi/", '')
+            result.append(Request(url=url, meta=meta, callback=self.parse_poi))
+        return result
 
     def parse_poi(self, response):
         html = HTML(response.text)
         item = LvmamaPoiDetailItem()
-        item['raw'] = {'html': str(lzma.compress(response.body))}
+        meta = response.request.meta
+        item['raw'] = {'html': str(lzma.compress(response.body)), 'meta': meta}
         url = response.request.url
         item['url'] = url
-        item['country'] = response.request.meta.get('country')
-
+        item['country'] = meta['country']
 
         if 'sight' in url:
             item['head'] = get_text_by_xpath(html, './/span[@class="crumbs_nav"]/span//text()')
@@ -77,11 +192,10 @@ class LvmamaSpider(RedisSpider):
             item['title_en'] = get_text_by_xpath(html, './/div[@class="vtop-name-box"]/span[@class="title-eng"]/text()')
             item['vcomon'] = get_text_by_xpath(html, './/div[@class="vtop-name-box"]/i[@class="vcomon-icon"]/text()')
 
-
             dls = html.xpath('.//dl[@class="poi_bordernone"]')
             for dl in dls:
                 dt = get_text_by_xpath(dl, './/dt//text()')
-                dd = get_text_by_xpath(dl, './/dt//text()')
+                dd = get_text_by_xpath(dl, './/dd//text()')
                 if '简介' in dt:
                     item['poi_brief'] = dd
 
