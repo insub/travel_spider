@@ -12,6 +12,7 @@ import datetime
 import os
 import time
 
+import urlparse3
 
 def get_error_log_dir(spider):
     '''
@@ -67,6 +68,31 @@ def get_date(days = 0, strpt="%Y-%m-%d"):
 
 def get_text_by_xpath(ele, xpath, join_str=""):
     try:
-        return join_str.join([i.replace('\n', '').replace(' ', '').strip() for i in ele.xpath(xpath) if i != ""])
+        return join_str.join([i.replace('\n', '').strip() for i in ele.xpath(xpath) if i != ""])
     except Exception as e:
         return ''
+
+
+def get_url_query(url):
+    parse = urlparse3.parse_url(url)
+    return dict(parse.query)
+
+
+def get_cookie(cookie_str, split_char=";"):
+    cookie = {}
+    for key_value in cookie_str.split(split_char):
+        cookie[key_value.split('=')[0].strip()] = key_value.lstrip(key_value.split('=')[0]).replace('=', '',1)
+    return cookie
+
+
+def get_indexof(s, c):
+    try:
+        return s.index(c)
+    except Exception as e:
+        return -1
+
+
+if __name__ == '__main__':
+    s = "镇美景酒店Town View Hotel"
+
+    print(s[get_indexof(s, '(')+1:-1])

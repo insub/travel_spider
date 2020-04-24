@@ -21,7 +21,7 @@ from scrapy.http import Request
 
 from travel_spider import utils
 from travel_spider import items
-from travel_spider.country import  qyer_countries
+from travel_spider.country import qyer_countries
 
 class QyerSpider(RedisSpider):
     '''

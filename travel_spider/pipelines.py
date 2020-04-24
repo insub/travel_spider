@@ -59,7 +59,7 @@ class MongoPipline(object):
         if isinstance(item, MongoDBItem):
             name = item.collection
             self.db[name].insert(item['raw'])
-            return item
+        return item
 
     def close_spider(self, spider):
         self.client.close()

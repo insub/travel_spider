@@ -38,7 +38,8 @@ class LvmamaSpider(RedisSpider):
         'play': {'url': 'http://www.lvmama.com/lvyou/dest_content/AjaxGetPlayList?',
                  'data': {'page': 1,
                     'dest_id': ''
-                },'page_per_count': 20},
+                  },
+                 'page_per_count': 20},
 
         'scenery': {'url': 'http://www.lvmama.com/lvyou/ajax/getNewViewList?',
                  'data':{'page_num': 1,
@@ -48,9 +49,10 @@ class LvmamaSpider(RedisSpider):
                 },
                     'page_per_count': 10},
     }
+    URL = 'http://www.lvmama.com/lvyou/{type}/{country}'
 
     def start_requests(self):
-        url = 'http://www.lvmama.com/lvyou/{type}/{country}'
+        # url = 'http://www.lvmama.com/lvyou/{type}/{country}'
         for country, (type, value) in product(lvmanma_countries, self.content.items()):
             dest_id_pattern = re.compile('(\d+)')
             dest_id = dest_id_pattern.findall(country)[-1]
@@ -59,9 +61,8 @@ class LvmamaSpider(RedisSpider):
             page_per_count = value.get('page_per_count')
             if 'request_uri' in data:
                 data['request_uri'] = data['request_uri'] + country
-            # url = value.get('url') + urlencode(data)
 
-            yield Request(url=url.format(type=type, country=country), dont_filter=True,
+            yield Request(url=self.URL.format(type=type, country=country), dont_filter=True,
                           meta={'country': country, 'request_uri': country,
                                 'dest_id': dest_id,  'type': type, 'level': 'country', 'page_per_count': page_per_count},
                           callback=self.parse)
@@ -94,6 +95,7 @@ class LvmamaSpider(RedisSpider):
                     'page': i,
                     'dest_id': dest_id
                 }
+                meta['ref'] = data
                 yield Request(url="http://www.lvmama.com/lvyou/dest_content/AjaxGetPlayList?"+urlencode(data), meta=meta, callback=self.parse_play_list)
 
             elif type == 'play' and meta.get('level') != 'country':
@@ -102,6 +104,7 @@ class LvmamaSpider(RedisSpider):
                         'search_key': '',
                         'request_uri': '/lvyou/play/' + meta.get('request_uri'),
                         'type': type}
+                meta['ref'] = data
                 yield Request(url="http://www.lvmama.com/lvyou/dest_content/AjaxGetViewSpotList?" + urlencode(data), meta=meta, callback=self.parse_play_list2)
 
             elif type == 'scenery':
@@ -112,6 +115,7 @@ class LvmamaSpider(RedisSpider):
                         'base_id': base_id,
                         'request_uri': '/lvyou/scenery/' + meta.get('request_uri')
                 }
+                meta['ref'] = data
                 yield Request(url='http://www.lvmama.com/lvyou/ajax/getNewViewList?'+urlencode(data), meta=meta, callback=self.parse_view_list)
 
     def parse_view_list(self, response):
@@ -129,7 +133,6 @@ class LvmamaSpider(RedisSpider):
         for a in a_list:
             url = get_text_by_xpath(a, '@href')
             if url.startswith('http://www.lvmama.com/lvyou/poi') and not url.endswith('#dianping'):
-                url = get_text_by_xpath(a, '@href')
                 yield Request(url=url, meta=meta, callback=self.parse_poi)
 
     def parse_play_list(self, response):
@@ -143,15 +146,26 @@ class LvmamaSpider(RedisSpider):
         meta['level'] = 'city'
         html = HTML(jsn.get('data').get('html'))
         a_list = html.xpath('.//dl//div[@class="item-info"]//strong/a')
-        for a in a_list:
+        for a, (type, value) in product(a_list, self.content.items()):
             url = get_text_by_xpath(a, '@href')
+            dest = url.replace("http://www.lvmama.com/lvyou/", '')
             if url.startswith('http://www.lvmama.com/lvyou') and not url.endswith('#dianping'):
-                url = get_text_by_xpath(a, '@href')
                 meta['request_uri'] = url.replace("http://www.lvmama.com/lvyou/", '')
-                yield Request(url=url, meta=meta, callback=self.parse)
+                dest_id_pattern = re.compile('(\d+)')
+                dest_id = dest_id_pattern.findall(url)[-1]
+                data = copy.deepcopy(value.get('data'))
+                data['dest_id'] = dest_id
+                page_per_count = value.get('page_per_count')
+                meta['page_per_count'] = page_per_count
+                meta['type'] = type
+                if 'request_uri' in data:
+                    data['request_uri'] = data['request_uri'] + dest
+
+                yield Request(url=self.URL.format(type=type, country=dest), meta=meta, callback=self.parse)
 
     def parse_play_list2(self, response):
-        ## city 层面的playlist
+        # city 层面的playlist
+
         jsn = json.loads(response.text)
         item = LvmamaPoiItem()
         meta = response.request.meta
@@ -187,7 +201,7 @@ class LvmamaSpider(RedisSpider):
         item['country'] = meta['country']
 
         if 'sight' in url:
-            item['head'] = get_text_by_xpath(html, './/span[@class="crumbs_nav"]/span//text()')
+            item['head'] = get_text_by_xpath(html, './/span[@class="crumbs_nav"]/span/a//text()', "|")
             item['title'] = get_text_by_xpath(html, './/div[@class="vtop-name-box"]/h2[@class="title"]/text()')
             item['title_en'] = get_text_by_xpath(html, './/div[@class="vtop-name-box"]/span[@class="title-eng"]/text()')
             item['vcomon'] = get_text_by_xpath(html, './/div[@class="vtop-name-box"]/i[@class="vcomon-icon"]/text()')
@@ -226,7 +240,7 @@ class LvmamaSpider(RedisSpider):
                 elif '网址' in dt:
                     item['website'] = dd
         elif 'zone' in url:
-            item['head'] = get_text_by_xpath(html, './/div[@class="nav clearfix"]/span[@class="crumbs_nav fl"]//text()')
+            item['head'] = get_text_by_xpath(html, './/div[@class="nav clearfix"]/span[@class="crumbs_nav fl"]/span/a//text()','|')
             item['title'] = get_text_by_xpath(html,
                                               './/div[@class="nav_country clearfix"]/div[@class="countryBox fl"]/h1/text()')
             item['title_en'] = get_text_by_xpath(html,

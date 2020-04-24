@@ -18,3 +18,16 @@
 ![avatar](resources/pictures/驴妈妈.png)
 
 ![avatar](resources/pictures/驴妈妈2.png)
+
+## 携程需求
+
+携程的网址：https://hotels.ctrip.com/international/cairo332
+需要4个字段，目的地，酒店中文名，酒店英文名和酒店名称的超链接。
+
+![avatar](resources/pictures/携程.png)
+
+## 好巧
+https://www.haoqiao.com/palmcove_c1618#hq_language=zh-CN
+需要4个字段，目的地，酒店中文名，酒店英文名和酒店名称的超链接。
+
+![avatar](resources/pictures/好巧.png)

@@ -40,3 +40,21 @@ poi_tip_content  varchar(4000)  comment ' 小贴士',
 url  varchar(1000)  comment ''
 ) comment 'lvmama poi详情';
 
+
+CREATE table haoqiao_hotel_list (
+title  varchar(200) comment '酒店名',
+title_en  varchar(200) comment '酒店英文名',
+city  varchar(200) comment '所在城市',
+city_id  varchar(200) comment 'city id',
+url  varchar(500)
+) comment '好巧酒店列表';
+
+CREATE table ctrip_hotel_list (
+title  varchar(200) comment '酒店名',
+title_en  varchar(200) comment '酒店英文名',
+city  varchar(200) comment '所在城市',
+city_id  varchar(200) comment 'city id',
+url  varchar(500)
+) comment '携程酒店列表';
+
+

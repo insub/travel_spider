@@ -99,6 +99,38 @@ class LvmamaPoiDetailItem(MongoDBItem, MysqlItem):
     website = scrapy.Field()  # 官方网址
 
 
+class HaoqiaoItem(MysqlItem):
+    table = 'haoqiao_hotel_list'
+    title = scrapy.Field()
+    title_en = scrapy.Field()
+    city = scrapy.Field()
+    city_id = scrapy.Field()
+    url = scrapy.Field()
+
+
+class HaoqiaoMDBItem(MongoDBItem):
+    collection = 'haoqiao_hotel_list'
+    raw = scrapy.Field()
+
+
+class CtripHoteItem(MysqlItem):
+    """:param
+    携程酒店列表的条目
+    """
+    table = 'ctrip_hotel_list'
+
+    title = scrapy.Field()
+    title_en = scrapy.Field()
+    city = scrapy.Field()
+    city_id = scrapy.Field()
+    url = scrapy.Field()
+
+
+class CtripHotelMDBITem(MongoDBItem):
+    collection = 'ctrip_hotel_list'
+    raw = scrapy.Field()
+
+
 class PhotoItem(scrapy.Item):
     """
     图片item
